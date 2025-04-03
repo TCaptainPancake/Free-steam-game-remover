@@ -3,15 +3,23 @@ var table = document.querySelector(".account_table");
 if (table) {
     var rows = table.rows;
     for (let row of rows) {
-        var cell = row.querySelector(".license_acquisition_col");
-        if (cell && /Complimentary/i.test(cell.textContent)) {
-            var match = /javascript:\s*RemoveFreeLicense\s*\(\s*(\d+)/.exec(row.innerHTML);
-            if (match) {
-                appIds.push(match[1]);
+        var dateCell = row.querySelector(".license_date_col");
+        var acquisitionCell = row.querySelector(".license_acquisition_col");
+        if (acquisitionCell && /Complimentary/i.test(acquisitionCell.textContent)) {
+            // Check if the date is from June 2022
+            var dateText = dateCell.textContent.trim();
+            console.log("Found date:", dateText); // Debug log
+            if (dateText.match(/\d{1,2}\s+Jun,\s+2022/)) { // Change date here
+                console.log("Matched June 2022 date:", dateText); // Debug log
+                var match = /javascript:\s*RemoveFreeLicense\s*\(\s*(\d+)/.exec(row.innerHTML);
+                if (match) {
+                    appIds.push(match[1]);
+                }
             }
         }
     }
 }
+console.log("Found appIds:", appIds); // Debug log
 function removeNextPackage(appIds, i) {
     if (i >= appIds.length) {
         console.log("Removed all AppIds from account.");
