@@ -1,3 +1,13 @@
+// Configuration
+const TARGET_MONTH = 'Jun';
+const TARGET_YEAR = '2022';
+
+// Function to check if date matches target month and year
+const isTargetDate = (dateText) => {
+    const datePattern = new RegExp(`\\d{1,2}\\s+${TARGET_MONTH},\\s+${TARGET_YEAR}`);
+    return datePattern.test(dateText);
+};
+
 var appIds = [];
 var table = document.querySelector(".account_table");
 if (table) {
@@ -6,11 +16,10 @@ if (table) {
         var dateCell = row.querySelector(".license_date_col");
         var acquisitionCell = row.querySelector(".license_acquisition_col");
         if (acquisitionCell && /Complimentary/i.test(acquisitionCell.textContent)) {
-            // Check if the date is from June 2022
             var dateText = dateCell.textContent.trim();
             console.log("Found date:", dateText); // Debug log
-            if (dateText.match(/\d{1,2}\s+Jun,\s+2022/)) { // Change date here
-                console.log("Matched June 2022 date:", dateText); // Debug log
+            if (isTargetDate(dateText)) {
+                console.log(`Matched ${TARGET_MONTH} ${TARGET_YEAR} date:`, dateText); // Debug log
                 var match = /javascript:\s*RemoveFreeLicense\s*\(\s*(\d+)/.exec(row.innerHTML);
                 if (match) {
                     appIds.push(match[1]);
