@@ -4,8 +4,11 @@ const TARGET_YEAR = '2022';
 
 // Function to check if date matches target month and year
 const isTargetDate = (dateText) => {
-    const datePattern = new RegExp(`\\d{1,2}\\s+${TARGET_MONTH},\\s+${TARGET_YEAR}`);
-    return datePattern.test(dateText);
+    // Match both "15 Jun, 2022" and "Jun 15, 2022" formats
+    const dayFirstPattern = new RegExp(`\\d{1,2}\\s+${TARGET_MONTH},\\s+${TARGET_YEAR}`);
+    const monthFirstPattern = new RegExp(`${TARGET_MONTH}\\s+\\d{1,2},\\s+${TARGET_YEAR}`);
+    
+    return dayFirstPattern.test(dateText) || monthFirstPattern.test(dateText);
 };
 
 var appIds = [];
