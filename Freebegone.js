@@ -1,4 +1,4 @@
-// Configuration
+// SET DATE HERE FIRST
 const TARGET_MONTH = 'Jun';
 const TARGET_YEAR = '2022';
 
