@@ -1,17 +1,37 @@
+// Configuration
+const TARGET_MONTH = 'Jun';
+const TARGET_YEAR = '2022';
+
+// Function to check if date matches target month and year
+const isTargetDate = (dateText) => {
+    // Match both "15 Jun, 2022" and "Jun 15, 2022" formats
+    const dayFirstPattern = new RegExp(`\\d{1,2}\\s+${TARGET_MONTH},\\s+${TARGET_YEAR}`);
+    const monthFirstPattern = new RegExp(`${TARGET_MONTH}\\s+\\d{1,2},\\s+${TARGET_YEAR}`);
+    
+    return dayFirstPattern.test(dateText) || monthFirstPattern.test(dateText);
+};
+
 var appIds = [];
 var table = document.querySelector(".account_table");
 if (table) {
     var rows = table.rows;
     for (let row of rows) {
-        var cell = row.querySelector(".license_acquisition_col");
-        if (cell && /Complimentary/i.test(cell.textContent)) {
-            var match = /javascript:\s*RemoveFreeLicense\s*\(\s*(\d+)/.exec(row.innerHTML);
-            if (match) {
-                appIds.push(match[1]);
+        var dateCell = row.querySelector(".license_date_col");
+        var acquisitionCell = row.querySelector(".license_acquisition_col");
+        if (acquisitionCell && /Complimentary/i.test(acquisitionCell.textContent)) {
+            var dateText = dateCell.textContent.trim();
+            console.log("Found date:", dateText); // Debug log
+            if (isTargetDate(dateText)) {
+                console.log(`Matched ${TARGET_MONTH} ${TARGET_YEAR} date:`, dateText); // Debug log
+                var match = /javascript:\s*RemoveFreeLicense\s*\(\s*(\d+)/.exec(row.innerHTML);
+                if (match) {
+                    appIds.push(match[1]);
+                }
             }
         }
     }
 }
+console.log("Found appIds:", appIds); // Debug log
 function removeNextPackage(appIds, i) {
     if (i >= appIds.length) {
         console.log("Removed all AppIds from account.");
