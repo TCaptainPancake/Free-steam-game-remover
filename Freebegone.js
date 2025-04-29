@@ -1,6 +1,3 @@
-// Steam License Remover with Multi-Date Selection
-// This script helps remove complimentary licenses from your Steam account
-
 // Create UI for date selection
 function createDateSelectionUI() {
     // Remove existing UI if it exists
@@ -17,10 +14,12 @@ function createDateSelectionUI() {
     uiContainer.style.border = '1px solid #66c0f4';
     uiContainer.style.borderRadius = '5px';
     uiContainer.style.padding = '15px';
-    uiContainer.style.width = '300px';
+    uiContainer.style.width = '350px'; // Slightly wider to accommodate game names
     uiContainer.style.zIndex = '9999';
     uiContainer.style.color = '#ffffff';
     uiContainer.style.fontFamily = 'Arial, sans-serif';
+    uiContainer.style.maxHeight = '90vh';
+    uiContainer.style.overflowY = 'auto';
     
     // Create header
     const header = document.createElement('h3');
@@ -145,11 +144,54 @@ function createDateSelectionUI() {
     statusContainer.appendChild(statusText);
     uiContainer.appendChild(statusContainer);
     
+    // Removed games section (collapsible)
+    const removedGamesHeader = document.createElement('div');
+    removedGamesHeader.textContent = 'Removed Games ▼';
+    removedGamesHeader.style.marginTop = '15px';
+    removedGamesHeader.style.padding = '5px';
+    removedGamesHeader.style.backgroundColor = '#2a475e';
+    removedGamesHeader.style.borderRadius = '3px';
+    removedGamesHeader.style.cursor = 'pointer';
+    removedGamesHeader.style.userSelect = 'none';
+    
+    const removedGamesList = document.createElement('div');
+    removedGamesList.id = 'removed-games-list';
+    removedGamesList.style.maxHeight = '200px';
+    removedGamesList.style.overflowY = 'auto';
+    removedGamesList.style.marginTop = '5px';
+    removedGamesList.style.padding = '5px';
+    removedGamesList.style.backgroundColor = '#16202d';
+    removedGamesList.style.borderRadius = '3px';
+    removedGamesList.style.display = 'none'; // Initially hidden
+    
+    // Add "no games removed yet" message
+    const noGamesMessage = document.createElement('div');
+    noGamesMessage.textContent = 'No games removed yet.';
+    noGamesMessage.style.color = '#acdbf5';
+    noGamesMessage.style.fontStyle = 'italic';
+    noGamesMessage.style.padding = '5px';
+    removedGamesList.appendChild(noGamesMessage);
+    
+    // Toggle visibility when header is clicked
+    removedGamesHeader.addEventListener('click', () => {
+        if (removedGamesList.style.display === 'none') {
+            removedGamesList.style.display = 'block';
+            removedGamesHeader.textContent = 'Removed Games ▲';
+        } else {
+            removedGamesList.style.display = 'none';
+            removedGamesHeader.textContent = 'Removed Games ▼';
+        }
+    });
+    
+    uiContainer.appendChild(removedGamesHeader);
+    uiContainer.appendChild(removedGamesList);
+    
     // Add UI to the page
     document.body.appendChild(uiContainer);
     
     // Setup event listeners
     const selectedDates = [];
+    const removedGames = []; // Track removed games
     
     addButton.addEventListener('click', () => {
         const month = monthInput.value;
@@ -168,12 +210,18 @@ function createDateSelectionUI() {
             return;
         }
         
-        findComplimentaryLicenses(selectedDates).then(appIds => {
-            if (appIds.length > 0) {
+        findComplimentaryLicenses(selectedDates).then(result => {
+            if (result && result.appIds.length > 0) {
                 removeButton.disabled = false;
                 removeButton.style.backgroundColor = '#66c0f4';
                 removeButton.style.cursor = 'pointer';
-                updateStatus(`Found ${appIds.length} complimentary licenses to remove.`);
+                updateStatus(`Found ${result.appIds.length} complimentary licenses to remove.`);
+                
+                // Store game names along with app IDs
+                window.appIdsToRemove = {
+                    appIds: result.appIds,
+                    gameNames: result.gameNames
+                };
             } else {
                 updateStatus('No complimentary licenses found for the selected dates.');
             }
@@ -181,7 +229,7 @@ function createDateSelectionUI() {
     });
     
     removeButton.addEventListener('click', () => {
-        if (window.appIdsToRemove && window.appIdsToRemove.length > 0) {
+        if (window.appIdsToRemove && window.appIdsToRemove.appIds.length > 0) {
             removeButton.disabled = true;
             removeButton.style.backgroundColor = '#777777';
             removeButton.style.cursor = 'not-allowed';
@@ -236,10 +284,55 @@ function createDateSelectionUI() {
         statusText.textContent = message;
     }
     
+    function addRemovedGame(appId, gameName) {
+        removedGames.push({ appId, gameName });
+        updateRemovedGamesList();
+    }
+    
+    function updateRemovedGamesList() {
+        const removedGamesList = document.getElementById('removed-games-list');
+        
+        // Clear the list
+        removedGamesList.innerHTML = '';
+        
+        if (removedGames.length === 0) {
+            const noGamesMessage = document.createElement('div');
+            noGamesMessage.textContent = 'No games removed yet.';
+            noGamesMessage.style.color = '#acdbf5';
+            noGamesMessage.style.fontStyle = 'italic';
+            noGamesMessage.style.padding = '5px';
+            removedGamesList.appendChild(noGamesMessage);
+            return;
+        }
+        
+        // Show removed games in reverse chronological order (newest first)
+        [...removedGames].reverse().forEach(game => {
+            const gameItem = document.createElement('div');
+            gameItem.style.padding = '5px';
+            gameItem.style.borderBottom = '1px solid #1b2838';
+            
+            const gameLink = document.createElement('a');
+            gameLink.href = `https://store.steampowered.com/app/${game.appId}`;
+            gameLink.target = '_blank';
+            gameLink.textContent = game.gameName || `App ID: ${game.appId}`;
+            gameLink.style.color = '#66c0f4';
+            gameLink.style.textDecoration = 'none';
+            
+            gameItem.appendChild(gameLink);
+            removedGamesList.appendChild(gameItem);
+        });
+        
+        // Show the section if it was hidden
+        if (removedGamesList.style.display === 'none') {
+            removedGamesList.style.display = 'block';
+            removedGamesHeader.textContent = 'Removed Games ▲';
+        }
+    }
+    
     // Initialize the dates list
     updateSelectedDatesList();
     
-    return { updateStatus };
+    return { updateStatus, addRemovedGame };
 }
 
 // Function to check if date matches one of the target month/year combinations
@@ -261,6 +354,7 @@ async function findComplimentaryLicenses(targetDates) {
     ui.updateStatus('Searching for complimentary licenses...');
     
     const appIds = [];
+    const gameNames = [];
     const table = document.querySelector(".account_table");
     
     if (table) {
@@ -268,6 +362,7 @@ async function findComplimentaryLicenses(targetDates) {
         for (let row of rows) {
             const dateCell = row.querySelector(".license_date_col");
             const acquisitionCell = row.querySelector(".license_acquisition_col");
+            const nameCell = row.querySelector(".license_name_col");
             
             if (acquisitionCell && /Complimentary/i.test(acquisitionCell.textContent)) {
                 const dateText = dateCell.textContent.trim();
@@ -275,22 +370,28 @@ async function findComplimentaryLicenses(targetDates) {
                 if (isTargetDate(dateText, targetDates)) {
                     const match = /javascript:\s*RemoveFreeLicense\s*\(\s*(\d+)/.exec(row.innerHTML);
                     if (match) {
-                        appIds.push(match[1]);
-                        console.log(`Found license to remove: ID ${match[1]} - Date: ${dateText}`);
+                        const appId = match[1];
+                        appIds.push(appId);
+                        
+                        // Extract game name if available
+                        const gameName = nameCell ? nameCell.textContent.trim() : `App ID: ${appId}`;
+                        gameNames.push(gameName);
+                        
+                        console.log(`Found license to remove: ${gameName} (ID ${appId}) - Date: ${dateText}`);
                     }
                 }
             }
         }
     }
     
-    window.appIdsToRemove = appIds;
     console.log(`Found ${appIds.length} complimentary licenses to remove.`);
-    return appIds;
+    return { appIds, gameNames };
 }
 
 // Function to remove licenses
-async function removeComplimentaryLicenses(appIds) {
+async function removeComplimentaryLicenses(licenses) {
     const ui = window.licenseRemoverUI || createDateSelectionUI();
+    const { appIds, gameNames } = licenses;
     
     if (appIds.length === 0) {
         ui.updateStatus('No licenses to remove.');
@@ -298,11 +399,11 @@ async function removeComplimentaryLicenses(appIds) {
     }
     
     ui.updateStatus(`Starting removal of ${appIds.length} licenses...`);
-    await removeNextPackage(appIds, 0);
+    await removeNextPackage(appIds, gameNames, 0);
 }
 
 // Recursive function to remove licenses one by one
-async function removeNextPackage(appIds, i) {
+async function removeNextPackage(appIds, gameNames, i) {
     const ui = window.licenseRemoverUI || createDateSelectionUI();
     
     if (i >= appIds.length) {
@@ -311,7 +412,7 @@ async function removeNextPackage(appIds, i) {
         return;
     }
     
-    ui.updateStatus(`Removing license ${i+1} of ${appIds.length}...`);
+    ui.updateStatus(`Removing license ${i+1} of ${appIds.length} (${gameNames[i]})...`);
     
     try {
         const response = await fetch("https://store.steampowered.com/account/removelicense", {
@@ -341,16 +442,20 @@ async function removeNextPackage(appIds, i) {
         if (data && data.success === 84) {
             // Rate limit exceeded - wait 10 minutes before retrying
             ui.updateStatus(`Rate limit exceeded. Waiting 10 minutes before continuing... (${i+1}/${appIds.length})`);
-            setTimeout(() => removeNextPackage(appIds, i), 600000);
+            setTimeout(() => removeNextPackage(appIds, gameNames, i), 600000);
         } else {
-            console.log(`Removed: ${appIds[i]} (${i + 1}/${appIds.length})`);
+            console.log(`Removed: ${gameNames[i]} (ID: ${appIds[i]}) (${i + 1}/${appIds.length})`);
+            
+            // Add to removed games list
+            ui.addRemovedGame(appIds[i], gameNames[i]);
+            
             // Add a short delay between requests to avoid triggering rate limits
-            setTimeout(() => removeNextPackage(appIds, i + 1), 2000);
+            setTimeout(() => removeNextPackage(appIds, gameNames, i + 1), 2000);
         }
     } catch (error) {
         console.error(`Network or parsing error: ${error}`);
         ui.updateStatus(`Error: ${error.message}. Retrying in 1 minute... (${i+1}/${appIds.length})`);
-        setTimeout(() => removeNextPackage(appIds, i), 60000);
+        setTimeout(() => removeNextPackage(appIds, gameNames, i), 60000);
     }
 }
 
